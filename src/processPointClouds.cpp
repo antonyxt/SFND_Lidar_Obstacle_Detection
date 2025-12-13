@@ -43,8 +43,8 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
 {
     // Create two new point clouds, one cloud with obstacles and other with segmented plane
     //typename pcl::PointCloud<PointT>::Ptr cloud_p(new pcl::PointCloud<PointT>());
-    auto cloud_p = boost::make_shared<pcl::PointCloud<PointT>>();
-    auto cloud_obs = boost::make_shared<pcl::PointCloud<PointT>>();
+    auto cloud_p = std::make_shared<pcl::PointCloud<PointT>>();
+    auto cloud_obs = std::make_shared<pcl::PointCloud<PointT>>();
     pcl::ExtractIndices<PointT> extract;
     extract.setInputCloud(cloud);
     extract.setIndices(inliers);
@@ -68,9 +68,9 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
 
     // Fill in this function to find inliers for the cloud.
     //pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
-    auto inliers = boost::make_shared<pcl::PointIndices>();
+    auto inliers = std::make_shared<pcl::PointIndices>();
     //pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients());
-    auto coefficients = boost::make_shared<pcl::ModelCoefficients>();
+    auto coefficients = std::make_shared<pcl::ModelCoefficients>();
     pcl::SACSegmentation<pcl::PointXYZ> seg;
 
     seg.setOptimizeCoefficients(true);
@@ -105,7 +105,7 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
     std::vector<typename pcl::PointCloud<PointT>::Ptr> clusters;
 
     // TODO:: Fill in the function to perform euclidean clustering to group detected obstacles
-    auto tree = boost::make_shared<pcl::search::KdTree<PointT>>();
+    auto tree = std::make_shared<pcl::search::KdTree<PointT>>();
     tree->setInputCloud(cloud);
     std::vector<pcl::PointIndices> clusterIndices;
     pcl::EuclideanClusterExtraction<PointT> ec;
@@ -117,7 +117,7 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
     ec.extract(clusterIndices);
     for(const auto& getIndices : clusterIndices)
     {
-        auto cloudCluster = boost::make_shared<pcl::PointCloud<PointT>>();
+        auto cloudCluster = std::make_shared<pcl::PointCloud<PointT>>();
         for(int index : getIndices.indices)
             cloudCluster->points.push_back(cloud->points[index]);
         cloudCluster->width = cloudCluster->points.size();
