@@ -240,56 +240,61 @@ std::unordered_set<int> ProcessPointClouds<PointT>::RansacPlane(typename pcl::Po
     , int maxIterations
     , float distanceTol)
 {
-    std::unordered_set<int> inliersResult;
+    std::unordered_set<int> bestInliersResult;
     srand(time(NULL));
-    
-    // For max iterations 
-    while(maxIterations--)
+
+    const int cloudSize = cloud->points.size();
+
+    for (int i = 0; i < maxIterations; ++i)
     {
         std::unordered_set<int> inliers;
 
-        // Randomly sample subset and fit line
-        while(inliers.size() < 3)
-            inliers.insert(rand() % cloud->points.size());
-        
-        // Measure distance between every point and fitted line
-        float x1, y1, x2, y2;
+        // Randomly sample 3 unique points
+        while (inliers.size() < 3)
+            inliers.insert(rand() % cloudSize);
 
-        auto itr = inliers.begin();
-        auto p1 = cloud->points[*itr];
-        itr++;
-        auto p2 = cloud->points[*itr];
-        itr++;
-        auto p3 = cloud->points[*itr];
+        auto it = inliers.begin();
+        const PointT& p1 = cloud->points[*it]; ++it;
+        const PointT& p2 = cloud->points[*it]; ++it;
+        const PointT& p3 = cloud->points[*it];
 
-        auto v1 = p2.getVector3fMap() - p1.getVector3fMap();
-        auto v2 = p3.getVector3fMap() - p1.getVector3fMap();
-        auto norm = v1.cross(v2);
+        // Plane coefficients from cross product
+        float v1x = p2.x - p1.x;
+        float v1y = p2.y - p1.y;
+        float v1z = p2.z - p1.z;
 
-        float d = -norm.dot(p1.getVector3fMap());
+        float v2x = p3.x - p1.x;
+        float v2y = p3.y - p1.y;
+        float v2z = p3.z - p1.z;
 
-        //iterate all other points
-        for(int index=0; index < cloud->points.size(); index++)
+        float A = v1y * v2z - v1z * v2y;
+        float B = v1z * v2x - v1x * v2z;
+        float C = v1x * v2y - v1y * v2x;
+
+        float norm = std::sqrt(A * A + B * B + C * C);
+        if (norm == 0.0f)
+            continue;
+
+        float invNorm = 1.0f / norm;
+        float D = -(A * p1.x + B * p1.y + C * p1.z);
+
+        // Measure distance for all points
+        for (int j = 0; j < cloudSize; ++j)
         {
-            // if the points is already  the edge of plane segment then continue
-            if(inliers.count(index) > 0)
-                continue;
+            const PointT& pt = cloud->points[j];
 
-            auto vec_p = cloud->points[index].getVector3fMap();
+            float distance =
+                std::fabs(A * pt.x + B * pt.y + C * pt.z + D) * invNorm;
 
-            float distance = fabs(norm.dot(vec_p) + d) / norm.norm();
-
-            // If distance is smaller than threshold count it as inlier
-            if(distance <= distanceTol)
-                inliers.insert(index);
-
+            if (distance <= distanceTol)
+                inliers.insert(j);
         }
-        if(inliers.size() > inliersResult.size())
-            inliersResult = inliers;
+
+        if (inliers.size() > bestInliersResult.size())
+            bestInliersResult = std::move(inliers);
     }
 
-    // Return indicies of inliers from fitted line with most inliers
-    return inliersResult;
+    return bestInliersResult;
 }
 
 template<typename PointT>

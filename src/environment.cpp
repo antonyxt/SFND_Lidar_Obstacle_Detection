@@ -85,9 +85,9 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer, ProcessPointCloud
     // -----Open 3D viewer and display City Block     -----
     // ----------------------------------------------------
   
-    //keep points in a 23×16×5 meter region
-    Eigen::Vector4f minPoint(-8.0, -8.0, -2.0, 1.0);
-    Eigen::Vector4f maxPoint(15.0, 8.0, 3.0, 1.0);
+    //keep points in a 23×12×5 meter region
+    Eigen::Vector4f minPoint(-8.0, -6.0, -2.0, 1.0);
+    Eigen::Vector4f maxPoint(15.0, 6.0, 3.0, 1.0);
 
     //Remove Car Roof
     Eigen::Vector4f roofMin(-1.5, -1.7, -1.0, 1.0);
