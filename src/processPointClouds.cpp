@@ -62,7 +62,7 @@ typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(ty
     roof.setInputCloud(cloudRegion);
     roof.filter(indices);    // indices of points to REMOVE
 
-    pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
+    auto inliers = std::make_shared<pcl::PointIndices>();
     for (int point_index : indices)
     {
         inliers->indices.push_back(point_index);
@@ -88,7 +88,6 @@ template<typename PointT>
 std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::SeparateClouds(pcl::PointIndices::Ptr inliers, typename pcl::PointCloud<PointT>::Ptr cloud) 
 {
     // Create two new point clouds, one cloud with obstacles and other with segmented plane
-    //typename pcl::PointCloud<PointT>::Ptr cloud_p(new pcl::PointCloud<PointT>());
     auto cloud_p = std::make_shared<pcl::PointCloud<PointT>>();
     auto cloud_obs = std::make_shared<pcl::PointCloud<PointT>>();
     pcl::ExtractIndices<PointT> extract;
@@ -113,9 +112,7 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
     auto startTime = std::chrono::steady_clock::now();
 
     // Fill in this function to find inliers for the cloud.
-    //pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
     auto inliers = std::make_shared<pcl::PointIndices>();
-    //pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients());
     auto coefficients = std::make_shared<pcl::ModelCoefficients>();
     pcl::SACSegmentation<pcl::PointXYZ> seg;
 
@@ -214,7 +211,7 @@ template<typename PointT>
 typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::loadPcd(std::string file)
 {
 
-    typename pcl::PointCloud<PointT>::Ptr cloud (new pcl::PointCloud<PointT>);
+    auto cloud = std::make_shared<pcl::PointCloud<PointT>>();
 
     if (pcl::io::loadPCDFile<PointT> (file, *cloud) == -1) //* load the file
     {
