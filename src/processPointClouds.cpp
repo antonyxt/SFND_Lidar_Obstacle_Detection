@@ -21,19 +21,65 @@ void ProcessPointClouds<PointT>::numPoints(typename pcl::PointCloud<PointT>::Ptr
 
 
 template<typename PointT>
-typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(typename pcl::PointCloud<PointT>::Ptr cloud, float filterRes, Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint)
+typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(typename pcl::PointCloud<PointT>::Ptr cloud, float filterRes
+    , Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint
+    , Eigen::Vector4f roofMin, Eigen::Vector4f roofMax)
 {
 
     // Time segmentation process
     auto startTime = std::chrono::steady_clock::now();
 
-    // TODO:: Fill in the function to do voxel grid point reduction and region based filtering
+    // Fill in the function to do voxel grid point reduction and region based filtering
+
+    // 1. Apply Voxel Grid Downsampling
+    pcl::VoxelGrid<PointT> voxelGrid;
+    auto voxelFiltered = std::make_shared<pcl::PointCloud<PointT>>();
+
+    voxelGrid.setInputCloud(cloud);
+    voxelGrid.setLeafSize(filterRes, filterRes, filterRes);  // cube resolution
+    voxelGrid.filter(*voxelFiltered);
+
+    std::cout << "Voxel grid filter - cloud size: " << voxelFiltered->size() << std::endl;
+
+    // 2. Region of Interest Filtering (CropBox)
+    pcl::CropBox<PointT> region(true);  // since dealing with points inside that CropBox
+    region.setMin(minPoint);            
+    region.setMax(maxPoint);    
+
+    auto cloudRegion = std::make_shared<pcl::PointCloud<PointT>>();
+    region.setInputCloud(voxelFiltered);
+    region.filter(*cloudRegion);
+
+    std::cout << "ROI filter - cloud size: " << cloudRegion->size() << std::endl;
+
+    // 3. Remove points inside a "roof" region
+    // indices inside the region
+    std::vector<int> indices;
+
+    pcl::CropBox<PointT> roof(true);
+    roof.setMin(roofMin);
+    roof.setMax(roofMax);
+    roof.setInputCloud(cloudRegion);
+    roof.filter(indices);    // indices of points to REMOVE
+
+    pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
+    for (int point_index : indices)
+    {
+        inliers->indices.push_back(point_index);
+    }
+
+    // REMOVE those inliers
+    pcl::ExtractIndices<PointT> extract;
+    extract.setInputCloud(cloudRegion);
+    extract.setIndices(inliers);
+    extract.setNegative(true);        // true to REMOVE these points
+    extract.filter(*cloudRegion);     // update cloudRegion
 
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     std::cout << "filtering took " << elapsedTime.count() << " milliseconds" << std::endl;
 
-    return cloud;
+    return cloudRegion;
 
 }
 
